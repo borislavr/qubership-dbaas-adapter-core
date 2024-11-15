@@ -1,0 +1,954 @@
+basePath: /api/{apiVersion}/dbaas/adapter
+definitions:
+  dao.ConnectionProperties:
+    additionalProperties: true
+    type: object
+  dao.CreatedUser:
+    properties:
+      connectionProperties:
+        $ref: '#/definitions/dao.ConnectionProperties'
+      name:
+        type: string
+      resources:
+        items:
+          $ref: '#/definitions/dao.DbResource'
+        type: array
+      role:
+        type: string
+    type: object
+  dao.DatabaseAdapterAction:
+    enum:
+    - BACKUP
+    - RESTORE
+    type: string
+    x-enum-varnames:
+    - BackupAction
+    - RestoreAction
+  dao.DatabaseAdapterBackupAdapterTrackStatus:
+    enum:
+    - FAIL
+    - SUCCESS
+    - PROCEEDING
+    type: string
+    x-enum-varnames:
+    - FailTrackStatus
+    - SuccessTrackStatus
+    - ProceedingTrackStatus
+  dao.DatabaseAdapterBaseTrack:
+    properties:
+      action:
+        $ref: '#/definitions/dao.DatabaseAdapterAction'
+      details:
+        $ref: '#/definitions/dao.DatabasesBackupAdapt'
+      status:
+        $ref: '#/definitions/dao.DatabaseAdapterBackupAdapterTrackStatus'
+      trackId:
+        type: string
+    type: object
+  dao.DatabaseAdapterRestoreTrack:
+    properties:
+      action:
+        $ref: '#/definitions/dao.DatabaseAdapterAction'
+      changedNameDb:
+        additionalProperties:
+          type: string
+        type: object
+      details:
+        $ref: '#/definitions/dao.DatabasesBackupAdapt'
+      status:
+        $ref: '#/definitions/dao.DatabaseAdapterBackupAdapterTrackStatus'
+      trackId:
+        type: string
+    type: object
+  dao.DatabasesBackupAdapt:
+    properties:
+      localId:
+        type: string
+    type: object
+  dao.DbCreateRequest:
+    properties:
+      dbName:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      namePrefix:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      settings:
+        additionalProperties: true
+        type: object
+      username:
+        type: string
+    type: object
+  dao.DbCreateResponseMultiUser:
+    properties:
+      connectionDescription: {}
+      connectionProperties:
+        items:
+          $ref: '#/definitions/dao.ConnectionProperties'
+        type: array
+      name:
+        type: string
+      resources:
+        items:
+          $ref: '#/definitions/dao.DbResource'
+        type: array
+    type: object
+  dao.DbInfo:
+    properties:
+      microservice:
+        type: string
+      name:
+        type: string
+      namespace:
+        type: string
+      prefix:
+        type: string
+    type: object
+  dao.DbResource:
+    properties:
+      errorMessage:
+        type: string
+      kind:
+        type: string
+      name:
+        type: string
+      status:
+        $ref: '#/definitions/dao.DropResourceStatus'
+    type: object
+  dao.DropResourceStatus:
+    enum:
+    - DELETED
+    - DELETE_FAILED
+    type: string
+    x-enum-varnames:
+    - DELETED
+    - DELETE_FAILED
+  dao.LogicalDatabaseDescribed:
+    properties:
+      connectionProperties:
+        items:
+          $ref: '#/definitions/dao.ConnectionProperties'
+        type: array
+      resources:
+        items:
+          $ref: '#/definitions/dao.DbResource'
+        type: array
+    type: object
+  dao.RestorationRequest:
+    properties:
+      databases:
+        items:
+          $ref: '#/definitions/dao.DbInfo'
+        type: array
+      regenerateNames:
+        type: boolean
+    type: object
+  dao.UserCreateRequest:
+    properties:
+      dbName:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      usernamePrefix:
+        type: string
+    type: object
+  service.PhysicalDatabase:
+    properties:
+      id:
+        type: string
+      labels:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+info:
+  contact: {}
+  title: Dbaas adapter API
+paths:
+  /{appName}/backups/{backupId}:
+    delete:
+      consumes:
+      - application/json
+      description: Returns deletion status
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: trackId
+        in: path
+        name: backupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Succesfull delete
+          schema:
+            type: string
+        "500":
+          description: Unknown error
+          schema:
+            type: string
+      summary: Evict backup
+      tags:
+      - Backup and Restore
+  /{appName}/backups/{backupId}/restoration:
+    post:
+      consumes:
+      - application/json
+      description: Requests database backup daemon to restore specified backup with
+        specified databases info
+      parameters:
+      - description: List of databases to restore
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dao.RestorationRequest'
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: Backup identifier
+        in: path
+        name: backupId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Restore requested
+          schema:
+            $ref: '#/definitions/dao.DatabaseAdapterRestoreTrack'
+        "500":
+          description: Unknown error
+          schema:
+            type: string
+        "501":
+          description: Cannot restore backup without explicitly specified list of
+            databases in it
+          schema:
+            type: string
+      summary: Restore backup
+      tags:
+      - Backup and Restore
+  /{appName}/backups/{backupId}/restore:
+    post:
+      consumes:
+      - application/json
+      deprecated: true
+      description: Requests database backup daemon to restore specified backup. Deprecated,
+        please use /restoration endpoint instead
+      parameters:
+      - description: List of database names for restore
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/dao.DbInfo'
+          type: array
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: Backup identifier
+        in: path
+        name: backupId
+        required: true
+        type: string
+      - description: If this parameter has value true then restored databases will
+          have new names and will be passed through associative array changedNameDb
+          in response object
+        in: query
+        name: regenerateNames
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/dao.DatabaseAdapterRestoreTrack'
+        "500":
+          description: Unknown error
+          schema:
+            type: string
+        "501":
+          description: Cannot restore backup without explicitly specified list of
+            databases in it
+          schema:
+            type: string
+      summary: Restore backup
+      tags:
+      - Backup and Restore
+  /{appName}/backups/collect:
+    post:
+      consumes:
+      - application/json
+      description: Requests database backup daemon to collect backup for specified
+        databases
+      parameters:
+      - description: Databases to backup
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/dao.DatabaseAdapterBaseTrack'
+        "500":
+          description: Unknown error
+          schema:
+            type: string
+      summary: Collect backup
+      tags:
+      - Backup and Restore
+  /{appName}/backups/track/backup/{trackId}:
+    get:
+      description: Return status of backup task
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: trackId
+        in: path
+        name: trackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.DatabaseAdapterBaseTrack'
+        "500":
+          description: Unknown error
+          schema:
+            type: string
+      summary: Track backup
+      tags:
+      - Backup and Restore
+  /{appName}/backups/track/restore/{trackId}:
+    get:
+      description: Return status of restore task
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: trackId
+        in: path
+        name: trackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dao.DatabaseAdapterBaseTrack'
+        "500":
+          description: Unknown error
+          schema:
+            type: string
+      summary: Track restore
+      tags:
+      - Backup and Restore
+  /{appName}/databases:
+    get:
+      description: Returns list with names of databases
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Databases listed
+          schema:
+            items:
+              type: string
+            type: array
+        "500":
+          description: Error occurred while databases listing.
+          schema:
+            type: string
+      summary: List of all databases
+      tags:
+      - Database administration
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Creates database with one user having readWrite role in it and returns connection parameters including credentials.
+        Also in created database provided metadata being inserted in _dbaas_metadata collection.
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: Create DB body request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dao.DbCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dao.DbCreateResponseMultiUser'
+        "400":
+          description: Provided parameters does not meet the requirements
+          schema:
+            type: string
+      summary: Create database
+      tags:
+      - Database administration
+  /{appName}/databases/{dbName}/metadata:
+    put:
+      consumes:
+      - application/json
+      description: Changes metadata saved in databaase
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: Databases to update
+        in: path
+        name: dbName
+        required: true
+        type: string
+      - description: New metadata
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Update metadata was successful
+          schema:
+            type: string
+        "500":
+          description: Error was occurred during update metadata.
+          schema:
+            type: string
+      summary: Update database metadata
+      tags:
+      - Database administration
+  /{appName}/databases/{dbName}/migrate-to-vault/{userName}:
+    post:
+      consumes:
+      - application/json
+      description: Run migration of DB password to vault and returns vault secret
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: Databases to update
+        in: path
+        name: dbName
+        required: true
+        type: string
+      - description: User whose password should be migrated
+        in: path
+        name: userName
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Vault role name
+          schema:
+            type: string
+        "500":
+          description: Unknown error
+          schema:
+            type: string
+      summary: Migrate DB password to vault
+      tags:
+      - Database administration
+  /{appName}/describe/databases:
+    post:
+      consumes:
+      - application/json
+      description: Returns info about requested databases, this is optional API
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: If present - should return connection properties of each requested
+          database
+        in: query
+        name: resources
+        type: boolean
+      - description: If present - should return resources of each requested database
+        in: query
+        name: connectionProperties
+        type: boolean
+      - description: List of names of databases to describe
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            type: string
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dao.LogicalDatabaseDescribed'
+            type: object
+        "500":
+          description: Error occurred while databases describe.
+          schema:
+            type: string
+      summary: Describe databases
+      tags:
+      - Database administration
+  /{appName}/physical_database:
+    get:
+      consumes:
+      - application/json
+      description: Adapter belongs only one database cluster and send own physical
+        database information
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Own physical database information
+          schema:
+            $ref: '#/definitions/service.PhysicalDatabase'
+        "404":
+          description: Identifier is not specified
+          schema:
+            type: string
+      summary: Physical database information
+      tags:
+      - Database administration
+  /{appName}/resources/bulk-drop:
+    post:
+      consumes:
+      - application/json
+      description: Can drop any previously created resources such as user or database
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: List of resources to drop
+        in: body
+        name: body
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/dao.DbResource'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Drop successful
+          schema:
+            items:
+              $ref: '#/definitions/dao.DbResource'
+            type: array
+      summary: Drop created resources
+      tags:
+      - Database administration
+  /{appName}/users:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Creates new user for specified database and returns it with connection information,
+        or returns already created user if it exists. If database not specified will be used default database.
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: Info about user to create
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dao.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created
+          schema:
+            $ref: '#/definitions/dao.CreatedUser'
+        "500":
+          description: Error occurred while user creation.
+          schema:
+            type: string
+      summary: Create user
+      tags:
+      - Database administration
+  /{appName}/users/{name}:
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Creates new user for specified database and returns it with connection information,
+        or returns already created user if it exists. If database not specified will be used default database.
+      parameters:
+      - default: postgresql
+        description: Application name
+        enum:
+        - postgresql
+        - arangodb
+        - clickhouse
+        - mongodb
+        - cassandra
+        in: path
+        name: appName
+        required: true
+        type: string
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      - description: The username for creating user to database
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Info about user to ensure
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dao.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dao.CreatedUser'
+        "500":
+          description: Error occurred while user creation.
+          schema:
+            type: string
+      summary: Create user
+      tags:
+      - Database administration
+  /physical_database/force_registration:
+    get:
+      description: |-
+        Force this adapter to immediately register itself in dbaas-aggregator.
+        Adapter initiates background task that tries to register physical database in dbaas-aggregator,
+        and responds with status 202 before the background task finishes.
+      parameters:
+      - default: v2
+        description: API version of dbaas adapter
+        enum:
+        - v1
+        - v2
+        in: path
+        name: apiVersion
+        required: true
+        type: string
+      responses:
+        "202":
+          description: if physical database registration process has been started
+            successfully.
+          schema:
+            type: string
+      summary: Force physical database registration
+      tags:
+      - Common dbaas adapter operations
+swagger: "2.0"

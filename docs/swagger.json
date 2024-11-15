@@ -1,0 +1,1345 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Dbaas adapter API",
+        "contact": {}
+    },
+    "basePath": "/api/{apiVersion}/dbaas/adapter",
+    "paths": {
+        "/physical_database/force_registration": {
+            "get": {
+                "description": "Force this adapter to immediately register itself in dbaas-aggregator.\nAdapter initiates background task that tries to register physical database in dbaas-aggregator,\nand responds with status 202 before the background task finishes.",
+                "tags": [
+                    "Common dbaas adapter operations"
+                ],
+                "summary": "Force physical database registration",
+                "parameters": [
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "if physical database registration process has been started successfully.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/backups/collect": {
+            "post": {
+                "description": "Requests database backup daemon to collect backup for specified databases",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup and Restore"
+                ],
+                "summary": "Collect backup",
+                "parameters": [
+                    {
+                        "description": "Databases to backup",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/dao.DatabaseAdapterBaseTrack"
+                        }
+                    },
+                    "500": {
+                        "description": "Unknown error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/backups/track/backup/{trackId}": {
+            "get": {
+                "description": "Return status of backup task",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup and Restore"
+                ],
+                "summary": "Track backup",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "trackId",
+                        "name": "trackId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dao.DatabaseAdapterBaseTrack"
+                        }
+                    },
+                    "500": {
+                        "description": "Unknown error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/backups/track/restore/{trackId}": {
+            "get": {
+                "description": "Return status of restore task",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup and Restore"
+                ],
+                "summary": "Track restore",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "trackId",
+                        "name": "trackId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dao.DatabaseAdapterBaseTrack"
+                        }
+                    },
+                    "500": {
+                        "description": "Unknown error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/backups/{backupId}": {
+            "delete": {
+                "description": "Returns deletion status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup and Restore"
+                ],
+                "summary": "Evict backup",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "trackId",
+                        "name": "backupId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Succesfull delete",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Unknown error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/backups/{backupId}/restoration": {
+            "post": {
+                "description": "Requests database backup daemon to restore specified backup with specified databases info",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup and Restore"
+                ],
+                "summary": "Restore backup",
+                "parameters": [
+                    {
+                        "description": "List of databases to restore",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.RestorationRequest"
+                        }
+                    },
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Backup identifier",
+                        "name": "backupId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Restore requested",
+                        "schema": {
+                            "$ref": "#/definitions/dao.DatabaseAdapterRestoreTrack"
+                        }
+                    },
+                    "500": {
+                        "description": "Unknown error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "501": {
+                        "description": "Cannot restore backup without explicitly specified list of databases in it",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/backups/{backupId}/restore": {
+            "post": {
+                "description": "Requests database backup daemon to restore specified backup. Deprecated, please use /restoration endpoint instead",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Backup and Restore"
+                ],
+                "summary": "Restore backup",
+                "deprecated": true,
+                "parameters": [
+                    {
+                        "description": "List of database names for restore",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dao.DbInfo"
+                            }
+                        }
+                    },
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Backup identifier",
+                        "name": "backupId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "If this parameter has value true then restored databases will have new names and will be passed through associative array changedNameDb in response object",
+                        "name": "regenerateNames",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/dao.DatabaseAdapterRestoreTrack"
+                        }
+                    },
+                    "500": {
+                        "description": "Unknown error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "501": {
+                        "description": "Cannot restore backup without explicitly specified list of databases in it",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/databases": {
+            "get": {
+                "description": "Returns list with names of databases",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "List of all databases",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Databases listed",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error occurred while databases listing.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates database with one user having readWrite role in it and returns connection parameters including credentials.\nAlso in created database provided metadata being inserted in _dbaas_metadata collection.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Create database",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Create DB body request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.DbCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dao.DbCreateResponseMultiUser"
+                        }
+                    },
+                    "400": {
+                        "description": "Provided parameters does not meet the requirements",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/databases/{dbName}/metadata": {
+            "put": {
+                "description": "Changes metadata saved in databaase",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Update database metadata",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Databases to update",
+                        "name": "dbName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New metadata",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Update metadata was successful",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error was occurred during update metadata.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/databases/{dbName}/migrate-to-vault/{userName}": {
+            "post": {
+                "description": "Run migration of DB password to vault and returns vault secret",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Migrate DB password to vault",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Databases to update",
+                        "name": "dbName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User whose password should be migrated",
+                        "name": "userName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vault role name",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Unknown error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/describe/databases": {
+            "post": {
+                "description": "Returns info about requested databases, this is optional API",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Describe databases",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "If present - should return connection properties of each requested database",
+                        "name": "resources",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "If present - should return resources of each requested database",
+                        "name": "connectionProperties",
+                        "in": "query"
+                    },
+                    {
+                        "description": "List of names of databases to describe",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/dao.LogicalDatabaseDescribed"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error occurred while databases describe.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/physical_database": {
+            "get": {
+                "description": "Adapter belongs only one database cluster and send own physical database information",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Physical database information",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Own physical database information",
+                        "schema": {
+                            "$ref": "#/definitions/service.PhysicalDatabase"
+                        }
+                    },
+                    "404": {
+                        "description": "Identifier is not specified",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/resources/bulk-drop": {
+            "post": {
+                "description": "Can drop any previously created resources such as user or database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Drop created resources",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "List of resources to drop",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dao.DbResource"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Drop successful",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dao.DbResource"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/users": {
+            "put": {
+                "description": "Creates new user for specified database and returns it with connection information,\nor returns already created user if it exists. If database not specified will be used default database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Create user",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Info about user to create",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.UserCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User created",
+                        "schema": {
+                            "$ref": "#/definitions/dao.CreatedUser"
+                        }
+                    },
+                    "500": {
+                        "description": "Error occurred while user creation.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/{appName}/users/{name}": {
+            "put": {
+                "description": "Creates new user for specified database and returns it with connection information,\nor returns already created user if it exists. If database not specified will be used default database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Database administration"
+                ],
+                "summary": "Create user",
+                "parameters": [
+                    {
+                        "enum": [
+                            "postgresql",
+                            "arangodb",
+                            "clickhouse",
+                            "mongodb",
+                            "cassandra"
+                        ],
+                        "type": "string",
+                        "default": "postgresql",
+                        "description": "Application name",
+                        "name": "appName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "v1",
+                            "v2"
+                        ],
+                        "type": "string",
+                        "default": "v2",
+                        "description": "API version of dbaas adapter",
+                        "name": "apiVersion",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "The username for creating user to database",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Info about user to ensure",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dao.UserCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dao.CreatedUser"
+                        }
+                    },
+                    "500": {
+                        "description": "Error occurred while user creation.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dao.ConnectionProperties": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "dao.CreatedUser": {
+            "type": "object",
+            "properties": {
+                "connectionProperties": {
+                    "$ref": "#/definitions/dao.ConnectionProperties"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.DbResource"
+                    }
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.DatabaseAdapterAction": {
+            "type": "string",
+            "enum": [
+                "BACKUP",
+                "RESTORE"
+            ],
+            "x-enum-varnames": [
+                "BackupAction",
+                "RestoreAction"
+            ]
+        },
+        "dao.DatabaseAdapterBackupAdapterTrackStatus": {
+            "type": "string",
+            "enum": [
+                "FAIL",
+                "SUCCESS",
+                "PROCEEDING"
+            ],
+            "x-enum-varnames": [
+                "FailTrackStatus",
+                "SuccessTrackStatus",
+                "ProceedingTrackStatus"
+            ]
+        },
+        "dao.DatabaseAdapterBaseTrack": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "$ref": "#/definitions/dao.DatabaseAdapterAction"
+                },
+                "details": {
+                    "$ref": "#/definitions/dao.DatabasesBackupAdapt"
+                },
+                "status": {
+                    "$ref": "#/definitions/dao.DatabaseAdapterBackupAdapterTrackStatus"
+                },
+                "trackId": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.DatabaseAdapterRestoreTrack": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "$ref": "#/definitions/dao.DatabaseAdapterAction"
+                },
+                "changedNameDb": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "details": {
+                    "$ref": "#/definitions/dao.DatabasesBackupAdapt"
+                },
+                "status": {
+                    "$ref": "#/definitions/dao.DatabaseAdapterBackupAdapterTrackStatus"
+                },
+                "trackId": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.DatabasesBackupAdapt": {
+            "type": "object",
+            "properties": {
+                "localId": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.DbCreateRequest": {
+            "type": "object",
+            "properties": {
+                "dbName": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "namePrefix": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "settings": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.DbCreateResponseMultiUser": {
+            "type": "object",
+            "properties": {
+                "connectionDescription": {},
+                "connectionProperties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.ConnectionProperties"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.DbResource"
+                    }
+                }
+            }
+        },
+        "dao.DbInfo": {
+            "type": "object",
+            "properties": {
+                "microservice": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "namespace": {
+                    "type": "string"
+                },
+                "prefix": {
+                    "type": "string"
+                }
+            }
+        },
+        "dao.DbResource": {
+            "type": "object",
+            "properties": {
+                "errorMessage": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/dao.DropResourceStatus"
+                }
+            }
+        },
+        "dao.DropResourceStatus": {
+            "type": "string",
+            "enum": [
+                "DELETED",
+                "DELETE_FAILED"
+            ],
+            "x-enum-varnames": [
+                "DELETED",
+                "DELETE_FAILED"
+            ]
+        },
+        "dao.LogicalDatabaseDescribed": {
+            "type": "object",
+            "properties": {
+                "connectionProperties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.ConnectionProperties"
+                    }
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.DbResource"
+                    }
+                }
+            }
+        },
+        "dao.RestorationRequest": {
+            "type": "object",
+            "properties": {
+                "databases": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dao.DbInfo"
+                    }
+                },
+                "regenerateNames": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "dao.UserCreateRequest": {
+            "type": "object",
+            "properties": {
+                "dbName": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "usernamePrefix": {
+                    "type": "string"
+                }
+            }
+        },
+        "service.PhysicalDatabase": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

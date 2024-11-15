@@ -1,0 +1,79 @@
+# oc create -f - <<EOF
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: mongodb-swagger
+# spec:
+#   rules:
+#   - host: "mongodb-swagger.ci.example.com"
+#     http:
+#       paths:
+#       - pathType: Prefix
+#         path: "/"
+#         backend:
+#           service:
+#             name: dbaas-mongo-adapter
+#             port:
+#               number: 8080
+# EOF
+
+
+@baseUrl = http://mongodb-swagger.ci.example.com
+
+@dbName = testdb
+@username = test
+@password = test
+@apiPass = "0fff68a2-6bc7-4213-8047-34dcb6755bc7"
+@apiVersion = v1
+
+
+# Create Database
+# @name createDB
+POST {{baseUrl}}/api/{{apiVersion}}/dbaas/adapter/mongodb/databases
+Authorization: Basic dbaas-aggregator:dbaas-aggregator
+Content-Type: application/json
+
+{"metadata":{"classifier":{"namespace": "testNamespace"}, "microserviceName":"testMicroserviceName"}}
+
+
+###
+# @name migrateToVault
+@createdDBName = {{createDB.response.body.name}}
+@createdDBUser = {{createDB.response.body.connectionProperties.username}}
+#Migrate user to vault
+POST {{baseUrl}}/api/{{apiVersion}}/dbaas/adapter/mongodb/databases/{{createdDBName}}/migrate-to-vault/{{createdDBUser}}
+Authorization: Basic ZGJhYXMtYWdncmVnYXRvcjowZmZmNjhhMi02YmM3LTQyMTMtODA0Ny0zNGRjYjY3NTViYzc=
+
+
+###
+@createdDBName = {{createDB.response.body.name}}
+#Update user
+PUT {{baseUrl}}/api/{{apiVersion}}/dbaas/adapter/mongodb/users/{{createDB.response.body.connectionProperties.username}}
+Authorization: Basic ZGJhYXMtYWdncmVnYXRvcjowZmZmNjhhMi02YmM3LTQyMTMtODA0Ny0zNGRjYjY3NTViYzc=
+Content-Type: application/json
+
+{
+  "dbName": "{{createDB.response.body.name}}",
+  "password": "vault:nc-dbaas-ci.example.com_testNamespace_testMicroserviceName_362c9865-e2d6-4963-9a63-a232cfba24f8",
+  "role": "admin"
+}
+
+
+###
+@createdDBName = {{createDB.response.body.name}}
+#Delete resources
+POST {{baseUrl}}/api/v1/dbaas/adapter/redis/resources/bulk-drop
+Authorization: Basic dbaas-aggregator:dbaas-aggregator
+Content-Type: application/json
+
+[
+  {
+    "kind": "database",
+    "name": "{{createDB.response.body.name}}"
+  },
+  {
+    "kind": "user",
+    "name": "{{createDB.response.body.name}}:{{createDB.response.body.username}}"
+  }
+]
+

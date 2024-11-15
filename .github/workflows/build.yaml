@@ -1,0 +1,12 @@
+name: tests
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  publish-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: go test ./...
